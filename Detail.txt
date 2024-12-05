@@ -1,0 +1,89 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class Detail extends StatefulWidget {
+  @override
+  State<Detail> createState() => _DetailState();
+}
+
+class _DetailState extends State<Detail> {
+  Map<String, dynamic>? country;
+
+  Future<void> getCountry(String countryName) async {
+    final reponse = await http
+        .get(Uri.parse('https://restcountries.com/v3.1/name/$countryName'));
+
+    if (reponse.statusCode == 200) {
+      final data = jsonDecode(reponse.body);
+      setState(() {
+        country = data[0];
+      });
+    } else {
+      throw Exception(reponse.statusCode);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getCountry('japan');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: Text("Thông tin chi tiết"),
+        ),
+        body: country == null
+            ? Center(
+                child: CircularProgressIndicator(),
+              )
+            : ListView(
+                padding: EdgeInsets.all(8),
+                children: [
+                  if (country!["flags"] != null &&
+                      country!["flags"]["png"] != null)
+                    Expanded(
+                      child: Image.network(country!["flags"]["png"]),
+                    ),
+                  BuildRow("Tên", country!["name"]['common']),
+                  BuildRow(
+                      'Thudo', country!["capital"]?[0] ?? "Khong co thu do"),
+                  BuildRow('Chau luc', country!['region']),
+                  BuildRow(
+                      'Tien te',
+                      country!['currencies'] != null
+                          ? country!['currencies'].keys.first
+                          : "Khong co"),
+                  BuildRow('Dan so', country!['population'].toString()),
+                  BuildRow('Mui gio', country!['timezones'].toString()),
+                  ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Row(
+                        children: [
+                          Icon(Icons.arrow_back_ios),
+                          SizedBox(
+                            width: 8,
+                          ),
+                          Text('quay lai')
+                        ],
+                      ))
+                ],
+              ));
+  }
+
+  Widget BuildRow(String tile, String value) {
+    return Padding(
+        padding: EdgeInsets.all(10),
+        child: Row(children: [
+          Text(tile),
+          SizedBox(width: 16),
+          Text(value),
+        ]));
+  }
+}
